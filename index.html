@@ -1,0 +1,827 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Slide Puzzle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* Start Screen Styles */
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        .start-screen.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .start-screen h1 {
+            font-size: 3rem;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .start-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            max-width: 500px;
+            text-align: center;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #4ecdc4, #556270);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Game Styles */
+        .game-content {
+            display: none;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .game-content.show {
+            display: block;
+        }
+
+        h1 {
+            margin: 10px 0 20px;
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 20px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .stat-box .label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .value {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 20px;
+            perspective: 1000px;
+        }
+
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            aspect-ratio: 1/1;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+
+        .puzzle-board:hover {
+            transform: rotateX(5deg) rotateY(5deg);
+        }
+
+        .tile {
+            background: linear-gradient(145deg, #e94560, #ff6b81);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+        }
+
+        .tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .tile:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .tile:hover::before {
+            left: 100%;
+        }
+
+        .tile.empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        .tile.empty:hover {
+            transform: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 400px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #4ecdc4, #556270);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            min-width: 120px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        button:hover::after {
+            opacity: 1;
+        }
+
+        .win-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .win-message.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .win-message h2 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-align: center;
+            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+
+        .win-stats {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .win-stat {
+            margin: 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .win-stat span {
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            border-radius: 50%;
+            animation: confetti-fall 5s linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Trophy animation */
+        .trophy {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0) rotate(-10deg); }
+            to { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        /* Music Controls */
+        .music-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .music-control i {
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 500px) {
+            .start-screen h1 {
+                font-size: 2rem;
+            }
+            
+            .start-screen p {
+                font-size: 1rem;
+                padding: 0 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .tile {
+                font-size: 1.8rem;
+            }
+            
+            button {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+                min-width: 100px;
+            }
+            
+            .win-message h2 {
+                font-size: 2rem;
+            }
+            
+            .stat-box {
+                padding: 10px 15px;
+            }
+            
+            .stat-box .label {
+                font-size: 0.8rem;
+            }
+            
+            .stat-box .value {
+                font-size: 1.2rem;
+            }
+            
+            .music-control {
+                width: 40px;
+                height: 40px;
+                bottom: 15px;
+                right: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Start Screen -->
+    <div class="start-screen" id="start-screen">
+        <h1>Slide Puzzle Game</h1>
+        <button class="start-btn" id="start-btn">Start Game</button>
+    </div>
+
+    <!-- Game Content -->
+    <div class="game-content" id="game-content">
+        <h1>Number Slide Puzzle</h1>
+        
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="label">Time</div>
+                <div class="value" id="timer">00:00</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Moves</div>
+                <div class="value" id="moves">0</div>
+            </div>
+        </div>
+        
+        <div class="game-container">
+            <div class="puzzle-board" id="puzzle-board">
+                <!-- Tiles will be generated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="shuffle-btn">Shuffle</button>
+            <button id="reset-btn">Reset</button>
+        </div>
+        
+        <div class="win-message" id="win-message">
+            <div class="trophy">🏆</div>
+            <h2>Puzzle Solved!</h2>
+            <div class="win-stats">
+                <div class="win-stat">Time: <span id="win-time">00:00</span></div>
+                <div class="win-stat">Moves: <span id="win-moves">0</span></div>
+            </div>
+            <button id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Music Control -->
+    <div class="music-control" id="music-control">
+        <i class="fas fa-music"></i>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="bg-music" loop>
+        <source src="energetic-upbeat-background-music-357204.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const startScreen = document.getElementById('start-screen');
+            const startBtn = document.getElementById('start-btn');
+            const gameContent = document.getElementById('game-content');
+            const puzzleBoard = document.getElementById('puzzle-board');
+            const shuffleBtn = document.getElementById('shuffle-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const playAgainBtn = document.getElementById('play-again-btn');
+            const winMessage = document.getElementById('win-message');
+            const movesDisplay = document.getElementById('moves');
+            const timerDisplay = document.getElementById('timer');
+            const winTimeDisplay = document.getElementById('win-time');
+            const winMovesDisplay = document.getElementById('win-moves');
+            const musicControl = document.getElementById('music-control');
+            const bgMusic = document.getElementById('bg-music');
+            
+            // Game Variables
+            let tiles = [];
+            let emptyIndex = 8; // Initially the last tile is empty
+            let moves = 0;
+            let seconds = 0;
+            let timerInterval;
+            let isGameRunning = false;
+            const size = 3; // 3x3 grid
+            let isMusicPlaying = false;
+
+            // Initialize the game
+            function initGame() {
+                // Show start screen
+                startScreen.classList.remove('hide');
+                gameContent.classList.remove('show');
+                
+                // Initialize music control
+                bgMusic.volume = 0.3;
+                musicControl.addEventListener('click', toggleMusic);
+            }
+
+            // Start the game
+            function startGame() {
+                startScreen.classList.add('hide');
+                gameContent.classList.add('show');
+                initPuzzle();
+            }
+
+            // Format time as MM:SS
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                return `${mins}:${secs}`;
+            }
+            
+            // Start the game timer
+            function startTimer() {
+                if (isGameRunning) return;
+                isGameRunning = true;
+                seconds = 0;
+                timerDisplay.textContent = formatTime(seconds);
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    timerDisplay.textContent = formatTime(seconds);
+                }, 1000);
+            }
+            
+            // Stop the game timer
+            function stopTimer() {
+                clearInterval(timerInterval);
+                isGameRunning = false;
+            }
+            
+            // Reset the game timer
+            function resetTimer() {
+                stopTimer();
+                seconds = 0;
+                timerDisplay.textContent = formatTime(seconds);
+            }
+            
+            // Initialize the puzzle
+            function initPuzzle() {
+                puzzleBoard.innerHTML = '';
+                tiles = [];
+                moves = 0;
+                movesDisplay.textContent = moves;
+                resetTimer();
+                
+                // Create tiles with numbers 1-8 and one empty tile
+                for (let i = 0; i < size * size; i++) {
+                    const tile = document.createElement('div');
+                    tile.className = i === emptyIndex ? 'tile empty' : 'tile';
+                    // Only show numbers 1-8, leave the last tile empty
+                    tile.textContent = i < size * size - 1 ? i + 1 : '';
+                    tile.dataset.index = i;
+                    
+                    tile.addEventListener('click', () => {
+                        if (!isGameRunning && moves === 0) startTimer();
+                        moveTile(i);
+                    });
+                    
+                    puzzleBoard.appendChild(tile);
+                    tiles.push(tile);
+                }
+            }
+            
+            // Shuffle the puzzle
+            function shufflePuzzle() {
+                let shuffleMoves = 100;
+                let lastMove = null;
+                
+                const shuffleInterval = setInterval(() => {
+                    if (shuffleMoves <= 0) {
+                        clearInterval(shuffleInterval);
+                        moves = 0;
+                        movesDisplay.textContent = moves;
+                        resetTimer();
+                        return;
+                    }
+                    
+                    const possibleMoves = getPossibleMoves(emptyIndex);
+                    // Filter out the reverse of the last move to avoid back-and-forth
+                    const filteredMoves = possibleMoves.filter(move => 
+                        lastMove === null || Math.abs(move - emptyIndex) !== Math.abs(lastMove - emptyIndex)
+                    );
+                    
+                    if (filteredMoves.length > 0) {
+                        const randomMove = filteredMoves[Math.floor(Math.random() * filteredMoves.length)];
+                        lastMove = emptyIndex;
+                        swapTiles(randomMove, emptyIndex);
+                        emptyIndex = randomMove;
+                        shuffleMoves--;
+                    }
+                }, 50);
+            }
+            
+            // Get possible moves for the empty space
+            function getPossibleMoves(emptyIndex) {
+                const moves = [];
+                const row = Math.floor(emptyIndex / size);
+                const col = emptyIndex % size;
+                
+                // Check up
+                if (row > 0) moves.push(emptyIndex - size);
+                // Check down
+                if (row < size - 1) moves.push(emptyIndex + size);
+                // Check left
+                if (col > 0) moves.push(emptyIndex - 1);
+                // Check right
+                if (col < size - 1) moves.push(emptyIndex + 1);
+                
+                return moves;
+            }
+            
+            // Move a tile to the empty space
+            function moveTile(index) {
+                const possibleMoves = getPossibleMoves(emptyIndex);
+                
+                if (possibleMoves.includes(index)) {
+                    swapTiles(index, emptyIndex);
+                    emptyIndex = index;
+                    moves++;
+                    movesDisplay.textContent = moves;
+                    
+                    if (checkWin()) {
+                        stopTimer();
+                        showVictory();
+                    }
+                }
+            }
+            
+            // Swap two tiles
+            function swapTiles(index1, index2) {
+                // Swap positions in DOM
+                const tempText = tiles[index1].textContent;
+                tiles[index1].textContent = tiles[index2].textContent;
+                tiles[index2].textContent = tempText;
+                
+                // Swap classes
+                tiles[index1].classList.toggle('empty');
+                tiles[index2].classList.toggle('empty');
+            }
+            
+            // Check if the puzzle is solved (numbers 1-8 in order with empty last)
+            function checkWin() {
+                for (let i = 0; i < size * size - 1; i++) {
+                    if (tiles[i].textContent !== String(i + 1)) {
+                        return false;
+                    }
+                }
+                return tiles[size * size - 1].classList.contains('empty');
+            }
+            
+            // Show victory animation
+            function showVictory() {
+                winTimeDisplay.textContent = formatTime(seconds);
+                winMovesDisplay.textContent = moves;
+                
+                setTimeout(() => {
+                    winMessage.classList.add('show');
+                    createConfetti();
+                }, 500);
+            }
+            
+            // Create confetti effect
+            function createConfetti() {
+                const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#ff9ff3', '#48dbfb', '#1dd1a1'];
+                
+                for (let i = 0; i < 100; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.width = Math.random() * 10 + 5 + 'px';
+                    confetti.style.height = confetti.style.width;
+                    confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    document.body.appendChild(confetti);
+                    
+                    // Remove confetti after animation
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }
+            }
+
+            // Toggle background music
+            function toggleMusic() {
+                if (isMusicPlaying) {
+                    bgMusic.pause();
+                    musicControl.innerHTML = '<i class="fas fa-music"></i>';
+                } else {
+                    bgMusic.play();
+                    musicControl.innerHTML = '<i class="fas fa-pause"></i>';
+                }
+                isMusicPlaying = !isMusicPlaying;
+            }
+            
+            // Event listeners
+            startBtn.addEventListener('click', startGame);
+            
+            shuffleBtn.addEventListener('click', () => {
+                shufflePuzzle();
+                resetTimer();
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                initPuzzle();
+            });
+            
+            playAgainBtn.addEventListener('click', () => {
+                winMessage.classList.remove('show');
+                initPuzzle();
+            });
+            
+            // Touch support for mobile devices
+            puzzleBoard.addEventListener('touchstart', handleTouchStart, { passive: false });
+            let touchStartX, touchStartY;
+            
+            function handleTouchStart(e) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                e.preventDefault();
+            }
+            
+            puzzleBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
+            
+            function handleTouchEnd(e) {
+                if (!touchStartX || !touchStartY) return;
+                
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                
+                const dx = touchEndX - touchStartX;
+                const dy = touchEndY - touchStartY;
+                
+                // Determine swipe direction
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    // Horizontal swipe
+                    if (dx > 0) {
+                        // Right swipe - try to move left tile into empty space
+                        const leftIndex = emptyIndex - 1;
+                        if (leftIndex >= 0 && Math.floor(leftIndex / size) === Math.floor(emptyIndex / size)) {
+                            if (!isGameRunning && moves === 0) startTimer();
+                            moveTile(leftIndex);
+                        }
+                    } else {
+                        // Left swipe - try to move right tile into empty space
+                        const rightIndex = emptyIndex + 1;
+                        if (rightIndex < size * size && Math.floor(rightIndex / size) === Math.floor(emptyIndex / size)) {
+                            if (!isGameRunning && moves === 0) startTimer();
+                            moveTile(rightIndex);
+                        }
+                    }
+                } else {
+                    // Vertical swipe
+                    if (dy > 0) {
+                        // Down swipe - try to move top tile into empty space
+                        const topIndex = emptyIndex - size;
+                        if (topIndex >= 0) {
+                            if (!isGameRunning && moves === 0) startTimer();
+                            moveTile(topIndex);
+                        }
+                    } else {
+                        // Up swipe - try to move bottom tile into empty space
+                        const bottomIndex = emptyIndex + size;
+                        if (bottomIndex < size * size) {
+                            if (!isGameRunning && moves === 0) startTimer();
+                            moveTile(bottomIndex);
+                        }
+                    }
+                }
+                
+                touchStartX = null;
+                touchStartY = null;
+                e.preventDefault();
+            }
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                let moveIndex = -1;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        moveIndex = emptyIndex + size;
+                        break;
+                    case 'ArrowDown':
+                        moveIndex = emptyIndex - size;
+                        break;
+                    case 'ArrowLeft':
+                        moveIndex = emptyIndex + 1;
+                        break;
+                    case 'ArrowRight':
+                        moveIndex = emptyIndex - 1;
+                        break;
+                }
+                
+                if (moveIndex >= 0 && moveIndex < size * size) {
+                    if (!isGameRunning && moves === 0) startTimer();
+                    moveTile(moveIndex);
+                }
+            });
+            
+            // Initialize the game
+            initGame();
+        });
+    </script>
+</body>
+</html>
